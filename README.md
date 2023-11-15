@@ -1,4 +1,4 @@
-![](./docs/chippyalt.png)
+![](./docs/chippyalt.jpg)
 
 # Chippy
 
