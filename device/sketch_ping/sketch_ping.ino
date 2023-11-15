@@ -7,9 +7,6 @@
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastTime = 0;
-// Timer set to 10 minutes (600000)
-// unsigned long timerDelay = 600000;
-// Set timer to 5 seconds (5000)
 unsigned long timerDelay = 5000;
 
 //========================================
@@ -60,7 +57,7 @@ void loop()
 
       // --- init
       String apiHost = std::string(API_URL).c_str(); // #arduino define to c-compatible string for concat
-      String apiPath = "/health";
+      String apiPath = "/blueprint_sketch_ping/ping";
       String apiUrl = apiHost + apiPath; // do I need to do clean up with vars in c++?
       https.begin(apiUrl.c_str());
       // --- headers
