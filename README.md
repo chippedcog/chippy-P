@@ -1,3 +1,5 @@
+![](./docs/chippy.jpg)
+
 # Chippy
 
 This is a proof of concept build for a passive/ambient hardware assistant for me to use when I'm doing lab work. This will become drastically more complex a unique use case, but is acting as a starting point for writing generalizable functionality. This template/starter is meant to help answer many of the following questions for new comers to hardeware and this pattern of UX.
