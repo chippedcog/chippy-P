@@ -18,7 +18,7 @@ void setup()
   Serial.println();
   // --- wifi
   Serial.print("Configuring wifi");
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin(ENV_WIFI_SSID, ENV_WIFI_PASSWORD);
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 15)
   { // 20 attempts, for example
@@ -56,8 +56,8 @@ void loop()
       HTTPClient https;
 
       // --- init
-      String apiHost = std::string(API_URL).c_str(); // #arduino define to c-compatible string for concat
-      String apiPath = "/blueprint_sketch_ping/ping";
+      String apiHost = std::string(ENV_API_URL).c_str(); // #arduino define to c-compatible string for concat
+      String apiPath = "/sketch/sketch_ping/ping";
       String apiUrl = apiHost + apiPath; // do I need to do clean up with vars in c++?
       https.begin(apiUrl.c_str());
       // --- headers
