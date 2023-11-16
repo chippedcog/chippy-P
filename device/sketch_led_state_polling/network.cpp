@@ -1,0 +1,30 @@
+#include "network.h"
+
+WiFiManager::WiFiManager(const char *ssid, const char *password)
+{
+  this->ssid = ssid;
+  this->password = password;
+}
+
+void WiFiManager::connect()
+{
+  Serial.print("Connecting to WiFi...");
+  WiFi.begin(ssid, password);
+  // --- attempt (<15 times)
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 15)
+  {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+  // --- mention failure if hit 15
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("Failed to connect to WiFi. Please check credentials and signal.");
+    return; // or handle the error differently
+  }
+  // --- mention connection!
+  Serial.println("");
+  Serial.println("WiFi connected");
+}

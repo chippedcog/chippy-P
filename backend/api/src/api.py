@@ -5,6 +5,7 @@ from sanic_cors import CORS
 import env
 from middleware.error_handler import APIErrorHandler
 from blueprints.sketch_ping.routes import blueprint_sketch_ping
+from blueprints.sketch_led_state_polling.routes import blueprint_sketch_led_state_polling
 
 # INIT
 api_app = Sanic('api')
@@ -17,7 +18,9 @@ api_app.error_handler = APIErrorHandler()
 
 
 # ROUTES
+# --- related sketch files
 api_app.blueprint(blueprint_sketch_ping)
+api_app.blueprint(blueprint_sketch_led_state_polling)
 
 
 # RUN
