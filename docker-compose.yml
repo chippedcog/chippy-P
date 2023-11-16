@@ -18,7 +18,8 @@ services:
       - DATABASE_APP_HOST=database_app # within docker network, we use service name
       - TARGET_ENV=local
       - TARGET_SERVICE=api
-    command: sh -c "watchmedo auto-restart --pattern="*.py" --directory="." --recursive -- python -u ./src/start.py"
+    command: python -u ./src/start.py # using Sanic's auto-reload, but need watch if doing multiprocessing
+    # command: sh -c "watchmedo auto-restart --pattern="*.py" --directory="." --recursive -- python -u ./src/start.py"
 
   database_app:
     image: ankane/pgvector:v0.5.1

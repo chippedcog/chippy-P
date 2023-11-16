@@ -20,16 +20,22 @@ api_app.error_handler = APIErrorHandler()
 
 
 # ROUTES (blueprint = top level route/prefix to prevent naming colissions)
+# --- get started pt.1
 api_app.blueprint(blueprint_sketch_ping)
+# --- get started pt.2
 api_app.blueprint(blueprint_sketch_led_state_action_button)
 api_app.blueprint(blueprint_sketch_led_state_polling)
+# --- get started pt.3
+api_app.blueprint(blueprint_sketch_narrator_camera)
+# --- goin wild (TODO)
+# ...
 
 
 # RUN
 def start_api():
     api_app.run(
-        dev=True,
+        auto_reload=True, # auto-reload only for dev. done via watchdog pkg in docker-compose file
+        dev=False,
         host=env.env_get_api_host(),
         port=env.env_get_api_port(),
-        auto_reload=False, # auto-reload only for dev. done via watchdog pkg in docker-compose file
-        workers=1) # whether 1 or 2 workers, sits at 3.8GB memory usage
+        workers=1)
