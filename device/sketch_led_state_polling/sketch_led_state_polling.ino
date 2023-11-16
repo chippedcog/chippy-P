@@ -8,11 +8,6 @@
 #include "network.h"
 #include "pins.h"
 
-// the following variables are unsigned longs because the time, measured in
-// milliseconds, will quickly become a bigger number than can be stored in an int.
-unsigned long lastTime = 0;
-unsigned long timerDelay = 3000;
-
 NETWORK_H WiFiManager myWiFiManager(ENV_WIFI_SSID, ENV_WIFI_PASSWORD);
 
 //========================================
@@ -29,6 +24,9 @@ void setup()
 }
 
 //========================================
+
+unsigned long lastTime = 0;
+unsigned long timerDelay = 3000; // measured in milliseconds = 3 sec
 
 void loop()
 {
