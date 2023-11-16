@@ -7,6 +7,7 @@ from middleware.error_handler import APIErrorHandler
 from blueprints.sketch_ping.routes import blueprint_sketch_ping
 from blueprints.sketch_led_state_polling.routes import blueprint_sketch_led_state_polling
 from blueprints.sketch_led_state_action_button.routes import blueprint_sketch_led_state_action_button
+from blueprints.sketch_narrator_camera.routes import blueprint_sketch_narrator_camera
 
 # INIT
 api_app = Sanic('api')
