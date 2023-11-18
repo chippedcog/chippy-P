@@ -8,6 +8,7 @@ opencv-python-headless==4.5.4.60
 patchify==0.2.3
 Pillow==10.1.0
 pydash==5.1.1
+pydub==0.25.1
 pyjwt==2.6.0
 python-dotenv==0.21.0
 python-json-logger==2.0.4

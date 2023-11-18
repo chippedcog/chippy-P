@@ -4,7 +4,7 @@ from PIL import Image
 import os
 from sanic import Blueprint, Request, empty, file, json
 
-from models.elevenlabs import eleven_labs_text_to_speech
+from models.elevenlabs import eleven_labs_text_to_speech, mp3_to_wav
 from models.gpt import gpt_completion_image_caption
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -16,18 +16,19 @@ blueprint_sketch_narrator_camera = Blueprint("narrator_camera", url_prefix="sket
 # ROUTES
 @blueprint_sketch_narrator_camera.route('/caption', methods=['POST'])
 async def route_sketch_narrator_camera_caption(request: Request):
+    # short circuiting to not hit vision endpoint
     try:
         # --- request body for file buffer
         image_buf = BytesIO(request.body)
         image_base64 = base64.b64encode(image_buf.read()).decode('utf-8')
-        # --- file saving for ref & cleanup
+        # --- (optional) file saving for ref & cleanup
         image_path = dir_path + "/image.jpg"
         if os.path.exists(image_path):
             os.remove(image_path)
         image = Image.open(image_buf)
         image.save(image_path)
         # --- image caption
-        caption = gpt_completion_image_caption(image_base64, prompt="What is in this picture and/or what is happening? Don't describe lack of quality. Use warm language.", max_tokens=120)
+        caption = gpt_completion_image_caption(image_base64, prompt="What's in this image? Don't talk about quality, and use warm language.", max_tokens=40)
         # --- respond to device
         return json({ "success": True, "caption": caption })
     except Exception as err:
@@ -40,14 +41,24 @@ async def route_sketch_narrator_camera_narrate(request: Request):
     try:
         # --- get text from req
         text: str = request.json.get('text')
+        if (text == None or len(text) == 0):
+            raise "No text provided for narration"
         # --- file saving for ref & cleanup
-        file_path_narration = dir_path + "/image_narrative.mp3"
+        file_path_narration = dir_path + "/image_narrative.wav"
         if os.path.exists(file_path_narration):
             os.remove(file_path_narration)
         # --- audio narration (saving in this directory for reference)
-        narration_audio_buf_reader = eleven_labs_text_to_speech(text, file_path=file_path_narration)
-        # --- respond to device (bufferreader -> bytes w/ .read())
-        return await file(narration_audio_buf_reader.read(), mime_type="audio/mpeg")
+        narration_audio_mp3_io = eleven_labs_text_to_speech(text, file_path=file_path_narration)
+        # --- convert mp3 to wav because compressed audio is a pain on devices
+        narration_audio_wav_io = mp3_to_wav(narration_audio_mp3_io)
+        # --- (optional) saving for reference/checking
+        with open(file_path_narration, 'wb') as f:
+            print(f'Writing BytesIO to: {file_path_narration}')
+            narration_audio_wav_io.seek(0) # moves cursor to start
+            f.write(narration_audio_wav_io.read())
+        # --- respond to device (should do bytesio.read() but getting err 'embedded null character in path')
+        print(f'Responding w/ audio/wav file image_narrative.wav')
+        return await file(file_path_narration, mime_type="audio/wav")
     except Exception as err:
         print(err)
         return empty(status=500)

@@ -8,18 +8,10 @@ RUN chmod +x /usr/local/bin/wait-for-it.sh
 
 # Install linux packages
 RUN apt-get update
-RUN apt-get install -y
-
-# # Cache Transformer/Language Models
-# # --- spacy: NER (en_core_web_trf)
-# RUN pip install spacy && python -m spacy download en_core_web_trf
-# # --- transformers (https://github.com/UKPLab/sentence-transformers/issues/352#issuecomment-923033069)
-# RUN pip install sentence-transformers transformers
-# # --- transformers:sentence_transformer
-# RUN python -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("sentence-transformers/all-mpnet-base-v2")'
-# # --- transformers:CLIP
-# RUN python -c 'from transformers import CLIPModel; CLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")'
-
+RUN apt-get install \
+  # --- for mp3 conversions by pydub
+  ffmpeg libavcodec-extra \
+  -y
 
 # Install python packages for app
 COPY requirements.txt .
