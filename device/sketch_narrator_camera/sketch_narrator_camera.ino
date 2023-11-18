@@ -5,18 +5,33 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-#include "camera.h"
-#include "env.h"
-#include "network.h"
 #include "pins.h"
-#include "pins_camera.h"
+#include "env.h"
+// fyi, arduino IDE requires extra files be placed in a src directory: https://github.com/microsoft/vscode-arduino/issues/763
+// refactored audio example removing SD card file loading: https://github.com/atomic14/esp32_audio/blob/4a39101ea0083aa12dcd3d838c3e51613ecdf3e3/i2s_output/src/main.cpp
+#include "src/audio/I2SOutput.h"
+#include "src/audio/WAVReader.h"
+#include "src/camera/camera.h"
+#include "src/camera/pins_camera.h"
+#include "src/network/network.h"
 
+// Audio
+i2s_pin_config_t i2sPins = {
+    .bck_io_num = PIN_AMP_BCLK,
+    .ws_io_num = PIN_AMP_LRC,
+    .data_out_num = PIN_AMP_DOUT,
+    .data_in_num = -1};
+I2SOutput *output;
+SampleSource *sampleSource;
+
+// Camera
+camera_config_t config;
+void camera_config_init();
+
+// Wifi
 NETWORK_H WiFiManager myWiFiManager(ENV_WIFI_SSID, ENV_WIFI_PASSWORD);
 
 //========================================
-
-camera_config_t config;
-void camera_config_init();
 
 void setup()
 {
@@ -36,7 +51,10 @@ void setup()
     return;
   }
   sensor_t *s = esp_camera_sensor_get();
+  // https://randomnerdtutorials.com/esp32-cam-ov2640-camera-settings/
   s->set_brightness(s, 1); // tweak brightness up
+  s->set_saturation(s, 1);
+  s->set_contrast(s, 1);
 }
 
 //========================================
@@ -68,7 +86,7 @@ void loop()
       String apiHost = std::string(ENV_API_URL).c_str();
       String captionText;
 
-      // CAPTURE FRAME
+      // 1. CAPTURE FRAME
       camera_fb_t *fb = esp_camera_fb_get();
       if (!fb)
       {
@@ -80,7 +98,7 @@ void loop()
         Serial.println("Camera capture success");
       }
 
-      // CAPTION HTTP REQUEST
+      // 2. CAPTION HTTP REQUEST
       // --- http
       HTTPClient httpCaption;
       String api1Path = "/sketch/sketch_narrator_camera/caption";
@@ -89,57 +107,64 @@ void loop()
       httpCaption.addHeader("Content-Type", "image/jpeg");
       // --- post
       int httpCaptionResponseCode = httpCaption.POST(fb->buf, fb->len);
-      if (httpCaptionResponseCode > 0)
-      {
-        String jsonCaptionSerialized = httpCaption.getString();
-        Serial.println(jsonCaptionSerialized);
-        // --- parse response
-        StaticJsonDocument<1024> jsonCaption; // 1024 is num bytes allocated, if too low I think it cleaves data. ex: had at 200, and long strings became null
-        DeserializationError error = deserializeJson(jsonCaption, jsonCaptionSerialized);
-        captionText = jsonCaption["caption"].as<String>(); // had to do this casting
-        Serial.println(captionText);
-      }
-      else
+      if (httpCaptionResponseCode < 0)
       {
         Serial.print("Error code: ");
         Serial.println(httpCaptionResponseCode);
         Serial.println(" ");
         Serial.println(httpCaption.errorToString(httpCaptionResponseCode));
       }
+      String jsonCaptionSerialized = httpCaption.getString();
+      Serial.println(jsonCaptionSerialized);
+      // --- parse response
+      StaticJsonDocument<1024> jsonCaption; // 1024 is num bytes allocated, if too low I think it cleaves data. ex: had at 200, and long strings became null
+      DeserializationError error = deserializeJson(jsonCaption, jsonCaptionSerialized);
+      captionText = jsonCaption["caption"].as<String>(); // had to do this casting
+      Serial.println(captionText);
       // --- close
       httpCaption.end();
 
-      // RELEASE FRAME (to free up memory)
+      // 3. RELEASE FRAME (to free up memory)
       esp_camera_fb_return(fb);
 
-      // NARRATION AUDIO HTTP REQUEST
-      // --- http
-      HTTPClient httpNarrate;
-      String api2Path = "/sketch/sketch_narrator_camera/narrate";
-      String api2Url = apiHost + api2Path;
-      httpNarrate.begin(api2Url.c_str());
-      // --- post
-      StaticJsonDocument<1024> docPostBody; // could maybe be using DynamicJsonDocument https://arduinojson.org/v6/api/dynamicjsondocument
-      docPostBody["text"] = captionText;
-      String jsonPostBody;
-      serializeJson(docPostBody, jsonPostBody);
-      int httpNarrateResponseCode = httpNarrate.POST(jsonPostBody);
-      if (httpNarrateResponseCode > 0)
+      // ... ensure we got a caption before continuing (we cast to string which is why we're doing 'null' instead of NULL)
+      if (captionText != "null" && captionText.length() > 4)
       {
+        // 4. NARRATION AUDIO HTTP REQUEST
+        // --- http
+        HTTPClient httpNarrate;
+        String api2Path = "/sketch/sketch_narrator_camera/narrate";
+        String api2Url = apiHost + api2Path;
+        httpNarrate.begin(api2Url.c_str());
+        // --- post
+        StaticJsonDocument<1024> docPostBody; // could maybe be using DynamicJsonDocument https://arduinojson.org/v6/api/dynamicjsondocument
+        docPostBody["text"] = captionText;
+        String jsonPostBody;
+        serializeJson(docPostBody, jsonPostBody);
+        int httpNarrateResponseCode = httpNarrate.POST(jsonPostBody);
+        if (httpNarrateResponseCode < 0)
+        {
+          Serial.print("Error code: ");
+          Serial.println(httpNarrateResponseCode);
+          Serial.println(" ");
+          Serial.println(httpNarrate.errorToString(httpNarrateResponseCode));
+        }
         // --- parse response
-        Serial.println("got a narration");
-      }
-      else
-      {
-        Serial.print("Error code: ");
-        Serial.println(httpNarrateResponseCode);
-        Serial.println(" ");
-        Serial.println(httpNarrate.errorToString(httpNarrateResponseCode));
-      }
-      // --- close
-      httpNarrate.end();
+        // Get the size of the payload
+        size_t sizeOfPayloadBuffer = httpNarrate.getSize();
+        std::unique_ptr<uint8_t[]> audioBuffer(new uint8_t[sizeOfPayloadBuffer]); // Create a buffer to hold the audio data
+        // Read the data into the buffer
+        httpNarrate.getStream().readBytes(audioBuffer.get(), sizeOfPayloadBuffer);
+        // --- close
+        httpNarrate.end();
 
-      // PLAY BACK AUDIO (TODO)
+        // 5. PLAY BACK AUDIO
+        Serial.println("Narrating...");
+        sampleSource = new WAVReader(audioBuffer.get(), sizeOfPayloadBuffer);
+        output = new I2SOutput();
+        output->start(I2S_NUM_1, i2sPins, sampleSource);
+        Serial.println("Narrating done!");
+      }
     }
     else
     {
