@@ -73,6 +73,8 @@
     "__node_handle": "cpp",
     "complex": "cpp",
     "iomanip": "cpp",
-    "optional": "cpp"
+    "optional": "cpp",
+    "__string": "cpp",
+    "stop_token": "cpp"
   }
 }
