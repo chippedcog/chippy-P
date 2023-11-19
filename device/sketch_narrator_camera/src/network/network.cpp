@@ -8,7 +8,7 @@ WiFiManager::WiFiManager(const char *ssid, const char *password)
 
 void WiFiManager::connect()
 {
-  Serial.print("Connecting to WiFi...");
+  Serial.println("[WiFiManager::connect] Connecting to WiFi...");
   WiFi.begin(ssid, password);
   // --- attempt (<15 times)
   int attempts = 0;
@@ -21,10 +21,9 @@ void WiFiManager::connect()
   // --- mention failure if hit 15
   if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("Failed to connect to WiFi. Please check credentials and signal.");
+    Serial.println("[WiFiManager::connect] Failed to connect to WiFi. Please check credentials and signal.");
     return; // or handle the error differently
   }
   // --- mention connection!
-  Serial.println("");
-  Serial.println("WiFi connected");
+  Serial.println("[WiFiManager::connect] WiFi connected");
 }
