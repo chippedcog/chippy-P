@@ -31,8 +31,10 @@ void camera_config_init()
   camera_config.frame_size = FRAMESIZE_SXGA;   // 1280 x 1024, other sizes check https://randomnerdtutorials.com/esp32-cam-ov2640-camera-settings/
   camera_config.pixel_format = PIXFORMAT_JPEG; // for streaming
   // camera_config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
-  camera_config.grab_mode = CAMERA_GRAB_WHEN_EMPTY; // why not CAMERA_GRAB_LATEST??? https://github.com/espressif/esp32-camera/blob/master/driver/include/esp_camera.h#L88
   camera_config.fb_location = CAMERA_FB_IN_PSRAM;
   camera_config.jpeg_quality = 32; // 1 - 63
   camera_config.fb_count = 1;
+  camera_config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  // why not CAMERA_GRAB_LATEST??? https://github.com/espressif/esp32-camera/blob/master/driver/include/esp_camera.h#L88
+  // I tried this change, but then I just kept getting a black frame or poor quality frame https://github.com/espressif/esp32-camera/issues/545#issuecomment-1606970861
 }
