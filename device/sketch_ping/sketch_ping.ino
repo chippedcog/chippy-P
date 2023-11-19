@@ -57,7 +57,7 @@ void loop()
 
       // --- init
       String apiHost = std::string(ENV_API_URL).c_str(); // #arduino define to c-compatible string for concat
-      String apiPath = "/sketch/sketch_ping/ping";
+      String apiPath = "/device/sketch_ping/ping";
       String apiUrl = apiHost + apiPath; // do I need to do clean up with vars in c++?
       https.begin(apiUrl.c_str());
       // --- headers

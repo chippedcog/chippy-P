@@ -2,7 +2,7 @@ from random import randint
 from sanic import Blueprint, json
 
 # BLUEPRINT: aka route prefixing/reference class we attach to the api
-blueprint_sketch_led_state_action_button = Blueprint("led_state_action_button", url_prefix="sketch/sketch_led_state_action_button")
+blueprint_sketch_led_state_action_button = Blueprint("led_state_action_button", url_prefix="device/sketch_led_state_action_button")
 
 # ROUTES
 @blueprint_sketch_led_state_action_button.route('/state', methods=['GET'])

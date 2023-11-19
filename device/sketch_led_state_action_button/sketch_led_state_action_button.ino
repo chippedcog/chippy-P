@@ -51,7 +51,7 @@ void loop()
     {
       HTTPClient http;
       String apiHost = std::string(ENV_API_URL).c_str();
-      String apiPath = "/sketch/sketch_led_state_action_button/state";
+      String apiPath = "/device/sketch_led_state_action_button/state";
       String apiUrl = apiHost + apiPath;
       http.begin(apiUrl.c_str());
       // --- request (-1 code means error)
