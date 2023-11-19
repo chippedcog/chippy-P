@@ -9,10 +9,10 @@
 #include "pins.h"
 // fyi, arduino IDE requires extra files be placed in a src directory: https://github.com/microsoft/vscode-arduino/issues/763
 // refactored audio example removing SD card file loading: https://github.com/atomic14/esp32_audio/blob/4a39101ea0083aa12dcd3d838c3e51613ecdf3e3/i2s_output/src/main.cpp
-#include "src/audio/I2SOutput.h"
-#include "src/audio/WAVReader.h"
-#include "src/camera/camera_config_init.h" // references header files in that dir that we don't need to import here
-#include "src/network/network.h"
+#include "audio/I2SOutput.h"
+#include "audio/WAVReader.h"
+#include "camera/camera_config_init.h" // references header files in that dir that we don't need to import here
+#include "network/network.h"
 
 // Audio
 i2s_pin_config_t i2sPins = {
@@ -102,17 +102,20 @@ void loop()
       httpCaption.addHeader("Content-Type", "image/jpeg");
       // --- post (TODO: graceful err handling)
       int httpCaptionResponseCode = httpCaption.POST(fb->buf, fb->len);
+      Serial.printf("[loop] httpCaptionResponseCode = %d\n", httpCaptionResponseCode);
       if (httpCaptionResponseCode < 0)
       {
         Serial.printf("[loop] Error code: %d %s\n", httpCaptionResponseCode, httpCaption.errorToString(httpCaptionResponseCode));
       }
       String jsonCaptionSerialized = httpCaption.getString();
-      Serial.printf("[loop] jsonCaptionSerialized = '%s'\n", jsonCaptionSerialized);
+      Serial.printf("[loop] jsonCaptionSerialized = ");
+      Serial.println(jsonCaptionSerialized);
       // --- parse response
       StaticJsonDocument<1024> jsonCaption; // 1024 is num bytes allocated, if too low I think it cleaves data. ex: had at 200, and long strings became null
       DeserializationError error = deserializeJson(jsonCaption, jsonCaptionSerialized);
       captionText = jsonCaption["caption"].as<String>(); // had to do this casting
-      Serial.printf("[loop] captionText = '%s'\n", captionText);
+      Serial.printf("[loop] captionText = ");
+      Serial.println(captionText);
       // --- close
       httpCaption.end();
 
@@ -120,7 +123,7 @@ void loop()
       esp_camera_fb_return(fb);
 
       // ... ensure we got a caption before continuing (we cast to string which is why we're doing 'null' instead of NULL)
-      if (httpCaptionResponseCode == 0 && captionText != "null" && captionText.length() > 4)
+      if (captionText != "null" && captionText.length() > 4)
       {
         // 4. NARRATION AUDIO HTTP REQUEST
         // --- http
@@ -134,6 +137,7 @@ void loop()
         String jsonPostBody;
         serializeJson(docPostBody, jsonPostBody);
         int httpNarrateResponseCode = httpNarrate.POST(jsonPostBody);
+        Serial.printf("[loop] httpNarrateResponseCode = %d\n", httpNarrateResponseCode);
         if (httpNarrateResponseCode < 0)
         {
           Serial.printf("[loop] Error code: %d %s\n", httpNarrateResponseCode, httpNarrate.errorToString(httpNarrateResponseCode));
