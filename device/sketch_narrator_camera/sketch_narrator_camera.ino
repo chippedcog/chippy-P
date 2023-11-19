@@ -5,14 +5,13 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 
-#include "pins.h"
 #include "env.h"
+#include "pins.h"
 // fyi, arduino IDE requires extra files be placed in a src directory: https://github.com/microsoft/vscode-arduino/issues/763
 // refactored audio example removing SD card file loading: https://github.com/atomic14/esp32_audio/blob/4a39101ea0083aa12dcd3d838c3e51613ecdf3e3/i2s_output/src/main.cpp
 #include "src/audio/I2SOutput.h"
 #include "src/audio/WAVReader.h"
-#include "src/camera/camera.h"
-#include "src/camera/pins_camera.h"
+#include "src/camera/camera_config_init.h" // references header files in that dir that we don't need to import here
 #include "src/network/network.h"
 
 // Audio
@@ -23,10 +22,6 @@ i2s_pin_config_t i2sPins = {
     .data_in_num = -1};
 I2SOutput *output;
 SampleSource *sampleSource;
-
-// Camera
-camera_config_t config;
-void camera_config_init();
 
 // Wifi
 NETWORK_H WiFiManager myWiFiManager(ENV_WIFI_SSID, ENV_WIFI_PASSWORD);
@@ -44,10 +39,10 @@ void setup()
   pinMode(PIN_BUTTON, INPUT);
   // --- camera
   camera_config_init();
-  esp_err_t err = esp_camera_init(&config);
+  esp_err_t err = esp_camera_init(&camera_config);
   if (err != ESP_OK)
   {
-    Serial.printf("Camera init failed with error 0x%x", err);
+    Serial.printf("[setup] Camera init failed with error 0x%x \n", err);
     return;
   }
   sensor_t *s = esp_camera_sensor_get();
@@ -90,12 +85,12 @@ void loop()
       camera_fb_t *fb = esp_camera_fb_get();
       if (!fb)
       {
-        Serial.println("Camera capture failed");
+        Serial.println("[loop] Camera capture failed");
         return;
       }
       else
       {
-        Serial.println("Camera capture success");
+        Serial.println("[loop] Camera capture success");
       }
 
       // 2. CAPTION HTTP REQUEST
@@ -105,22 +100,19 @@ void loop()
       String api1Url = apiHost + api1Path;
       httpCaption.begin(api1Url.c_str());
       httpCaption.addHeader("Content-Type", "image/jpeg");
-      // --- post
+      // --- post (TODO: graceful err handling)
       int httpCaptionResponseCode = httpCaption.POST(fb->buf, fb->len);
       if (httpCaptionResponseCode < 0)
       {
-        Serial.print("Error code: ");
-        Serial.println(httpCaptionResponseCode);
-        Serial.println(" ");
-        Serial.println(httpCaption.errorToString(httpCaptionResponseCode));
+        Serial.printf("[loop] Error code: %d %s\n", httpCaptionResponseCode, httpCaption.errorToString(httpCaptionResponseCode));
       }
       String jsonCaptionSerialized = httpCaption.getString();
-      Serial.println(jsonCaptionSerialized);
+      Serial.printf("[loop] jsonCaptionSerialized = '%s'\n", jsonCaptionSerialized);
       // --- parse response
       StaticJsonDocument<1024> jsonCaption; // 1024 is num bytes allocated, if too low I think it cleaves data. ex: had at 200, and long strings became null
       DeserializationError error = deserializeJson(jsonCaption, jsonCaptionSerialized);
       captionText = jsonCaption["caption"].as<String>(); // had to do this casting
-      Serial.println(captionText);
+      Serial.printf("[loop] captionText = '%s'\n", captionText);
       // --- close
       httpCaption.end();
 
@@ -128,7 +120,7 @@ void loop()
       esp_camera_fb_return(fb);
 
       // ... ensure we got a caption before continuing (we cast to string which is why we're doing 'null' instead of NULL)
-      if (captionText != "null" && captionText.length() > 4)
+      if (httpCaptionResponseCode == 0 && captionText != "null" && captionText.length() > 4)
       {
         // 4. NARRATION AUDIO HTTP REQUEST
         // --- http
@@ -136,7 +128,7 @@ void loop()
         String api2Path = "/sketch/sketch_narrator_camera/narrate";
         String api2Url = apiHost + api2Path;
         httpNarrate.begin(api2Url.c_str());
-        // --- post
+        // --- post (TODO: graceful err handling)
         StaticJsonDocument<1024> docPostBody; // could maybe be using DynamicJsonDocument https://arduinojson.org/v6/api/dynamicjsondocument
         docPostBody["text"] = captionText;
         String jsonPostBody;
@@ -144,10 +136,7 @@ void loop()
         int httpNarrateResponseCode = httpNarrate.POST(jsonPostBody);
         if (httpNarrateResponseCode < 0)
         {
-          Serial.print("Error code: ");
-          Serial.println(httpNarrateResponseCode);
-          Serial.println(" ");
-          Serial.println(httpNarrate.errorToString(httpNarrateResponseCode));
+          Serial.printf("[loop] Error code: %d %s\n", httpNarrateResponseCode, httpNarrate.errorToString(httpNarrateResponseCode));
         }
         // --- parse response
         // Get the size of the payload
@@ -159,47 +148,15 @@ void loop()
         httpNarrate.end();
 
         // 5. PLAY BACK AUDIO
-        Serial.println("Narrating...");
+        Serial.println("[loop] Narrating on core 1 via task/queue...");
         sampleSource = new WAVReader(audioBuffer.get(), sizeOfPayloadBuffer);
         output = new I2SOutput();
         output->start(I2S_NUM_1, i2sPins, sampleSource);
-        Serial.println("Narrating done!");
       }
     }
     else
     {
-      Serial.println("WiFi Disconnected");
+      Serial.println("[loop] WiFi Disconnected");
     }
   }
-}
-
-// TODO: how should I refactor this out
-void camera_config_init()
-{
-  config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer = LEDC_TIMER_0;
-  config.pin_d0 = Y2_GPIO_NUM;
-  config.pin_d1 = Y3_GPIO_NUM;
-  config.pin_d2 = Y4_GPIO_NUM;
-  config.pin_d3 = Y5_GPIO_NUM;
-  config.pin_d4 = Y6_GPIO_NUM;
-  config.pin_d5 = Y7_GPIO_NUM;
-  config.pin_d6 = Y8_GPIO_NUM;
-  config.pin_d7 = Y9_GPIO_NUM;
-  config.pin_xclk = XCLK_GPIO_NUM;
-  config.pin_pclk = PCLK_GPIO_NUM;
-  config.pin_vsync = VSYNC_GPIO_NUM;
-  config.pin_href = HREF_GPIO_NUM;
-  config.pin_sscb_sda = SIOD_GPIO_NUM;
-  config.pin_sscb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn = PWDN_GPIO_NUM;
-  config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_QVGA;
-  config.pixel_format = PIXFORMAT_JPEG; // for streaming
-  // config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 12;
-  config.fb_count = 1;
 }
