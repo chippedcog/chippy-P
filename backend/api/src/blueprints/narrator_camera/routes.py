@@ -9,7 +9,7 @@ from models.gpt import gpt_completion_image_caption
 
 
 # BLUEPRINT: aka route prefixing/reference class we attach to the api
-blueprint_sketch_narrator_camera = Blueprint("narrator_camera", url_prefix="sketch/sketch_narrator_camera")
+blueprint_sketch_narrator_camera = Blueprint("narrator_camera", url_prefix="device/narrator_camera")
 
 
 dir_path = os.path.dirname(os.path.abspath(__file__))

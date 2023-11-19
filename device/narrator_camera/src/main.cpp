@@ -96,7 +96,7 @@ void loop()
       // 2. CAPTION HTTP REQUEST
       // --- http
       HTTPClient httpCaption;
-      String api1Path = "/sketch/sketch_narrator_camera/caption";
+      String api1Path = "/device/narrator_camera/caption";
       String api1Url = apiHost + api1Path;
       httpCaption.begin(api1Url.c_str());
       httpCaption.addHeader("Content-Type", "image/jpeg");
@@ -128,7 +128,7 @@ void loop()
         // 4. NARRATION AUDIO HTTP REQUEST
         // --- http
         HTTPClient httpNarrate;
-        String api2Path = "/sketch/sketch_narrator_camera/narrate";
+        String api2Path = "/device/narrator_camera/narrate";
         String api2Url = apiHost + api2Path;
         httpNarrate.begin(api2Url.c_str());
         // --- post (TODO: graceful err handling)
