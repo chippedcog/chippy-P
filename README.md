@@ -8,7 +8,7 @@ This is a community effort to do minimal demos of UX patterns for hardware that 
 
 ### Structure for Blueprints
 
-Each demo consists of two parts, a sketch/project directory you can find in `/devices` and an API `routes.py` file that serves the needed functionality by the hardware build. Ex)
+Each demo consists of two parts, a sketch/project directory you can find in `/device` and an API `backend/api/.../routes.py` file that serves the needed functionality by the hardware build.
 
 ```
 chippy-P/
@@ -32,7 +32,7 @@ We are being opinionated about these demos, in that all have to utilize the Sani
 
 1. `docker-compose up` from the root repo
 2. Run ngrok to have a proxy to point at your localhost:3000 api (force a http endpoint by adding the --scheme=http flag)
-3. Install the [Arduino IDE](https://www.arduino.cc/en/software) and/or [Platform IO](https://platformio.org/) (Arduino is fine to start, go for PlatformIO VSCode integration though)
+3. Install the [Arduino IDE](https://www.arduino.cc/en/software) for "sketch_xyz" projects. This is a simple way to get started. Install [Platform IO](https://platformio.org/) VSCode integration for those without a "sketch_" prefix, which takes a bit longer to setup but is an embedded engineering tool norm for complex projects (also compiles/uploads faster)
 4. Set an `env.h` for the project you want to run on a board (TODO: have some way to take the ngrok proxy endpoint and pass it in with a setup script)
 5. Upload a sketch to your ESP board (TODO: parts/build tutorial should be provided in each project folder)
 6. Play!
