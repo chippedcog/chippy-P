@@ -9,14 +9,14 @@ from models.gpt import gpt_completion_image_caption
 
 
 # BLUEPRINT: aka route prefixing/reference class we attach to the api
-blueprint_sketch_narrator_camera = Blueprint("narrator_camera", url_prefix="device/narrator_camera")
+blueprint_narrator_camera = Blueprint("narrator_camera", url_prefix="device/narrator_camera")
 
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 SHORT_CIRCUIT_REQUESTS = False
 
 # ROUTES
-@blueprint_sketch_narrator_camera.route('/caption', methods=['POST'])
+@blueprint_narrator_camera.route('/caption', methods=['POST'])
 async def route_sketch_narrator_camera_caption(request: Request):
     image_path = dir_path + "/image.jpg"
     # short circuit (reduce api reqs)
@@ -42,7 +42,7 @@ async def route_sketch_narrator_camera_caption(request: Request):
         return empty(status=500)
 
 
-@blueprint_sketch_narrator_camera.route('/narrate', methods=['POST'])
+@blueprint_narrator_camera.route('/narrate', methods=['POST'])
 async def route_sketch_narrator_camera_narrate(request: Request):
     file_path_narration = dir_path + "/image_narrative.wav"
     # short circuit (reduce api reqs after you have a file locally)
