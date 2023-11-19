@@ -7,22 +7,28 @@ from sanic import Blueprint, Request, empty, file, json
 from models.elevenlabs import eleven_labs_text_to_speech, mp3_to_wav
 from models.gpt import gpt_completion_image_caption
 
-dir_path = os.path.dirname(os.path.abspath(__file__))
 
 # BLUEPRINT: aka route prefixing/reference class we attach to the api
 blueprint_sketch_narrator_camera = Blueprint("narrator_camera", url_prefix="sketch/sketch_narrator_camera")
 
 
+dir_path = os.path.dirname(os.path.abspath(__file__))
+SHORT_CIRCUIT_REQUESTS = False
+
 # ROUTES
 @blueprint_sketch_narrator_camera.route('/caption', methods=['POST'])
 async def route_sketch_narrator_camera_caption(request: Request):
-    # short circuiting to not hit vision endpoint
+    image_path = dir_path + "/image.jpg"
+    # short circuit (reduce api reqs)
+    if SHORT_CIRCUIT_REQUESTS == True:
+        return json({ "success": True, "caption": "Short Circuiting." })
+
+    # REQ
     try:
         # --- request body for file buffer
         image_buf = BytesIO(request.body)
         image_base64 = base64.b64encode(image_buf.read()).decode('utf-8')
         # --- (optional) file saving for ref & cleanup
-        image_path = dir_path + "/image.jpg"
         if os.path.exists(image_path):
             os.remove(image_path)
         image = Image.open(image_buf)
@@ -38,13 +44,17 @@ async def route_sketch_narrator_camera_caption(request: Request):
 
 @blueprint_sketch_narrator_camera.route('/narrate', methods=['POST'])
 async def route_sketch_narrator_camera_narrate(request: Request):
+    file_path_narration = dir_path + "/image_narrative.wav"
+    # short circuit (reduce api reqs after you have a file locally)
+    if SHORT_CIRCUIT_REQUESTS == True:
+        return await file(file_path_narration, mime_type="audio/wav")
+
     try:
-        # --- get text from req
+        # --- check text from req body
         text: str = request.json.get('text')
         if (text == None or len(text) == 0):
             raise "No text provided for narration"
         # --- file saving for ref & cleanup
-        file_path_narration = dir_path + "/image_narrative.wav"
         if os.path.exists(file_path_narration):
             os.remove(file_path_narration)
         # --- audio narration (saving in this directory for reference)
