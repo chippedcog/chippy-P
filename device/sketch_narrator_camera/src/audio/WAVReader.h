@@ -7,9 +7,8 @@ class WAVReader : public SampleSource
 {
 public:
   WAVReader(const uint8_t *buffer, size_t bufferSize);
-  ~WAVReader();
+  bool getFrames(Frame_t *frames, int number_frames);
   int sampleRate() { return m_sample_rate; }
-  void getFrames(Frame_t *frames, int number_frames);
 
 private:
   const uint8_t *m_buffer;

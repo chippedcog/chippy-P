@@ -14,6 +14,8 @@ void i2sWriterTask(void *param)
     int availableBytes = 0;
     int buffer_position = 0;
     Frame_t *frames = (Frame_t *)malloc(sizeof(Frame_t) * NUM_FRAMES_TO_SEND);
+
+    // not allowing this task to return until we hit output->stop() and delete it
     while (true)
     {
         // wait for some data to be requested
@@ -23,13 +25,20 @@ void i2sWriterTask(void *param)
             if (evt.type == I2S_EVENT_TX_DONE)
             {
                 size_t bytesWritten = 0;
+                // otherwise continue to process
                 do
                 {
                     if (availableBytes == 0)
                     {
-                        // get some frames from the wave file - a frame consists of a 16 bit left and right sample
-                        output->m_sample_generator->getFrames(frames, NUM_FRAMES_TO_SEND);
-                        // how maby bytes do we now have to send
+                        if (!output->m_sample_generator->getFrames(frames, NUM_FRAMES_TO_SEND))
+                        {
+                            // No more frames were filled, end of playback by deleting this task
+                            Serial.println("[i2sWriterTask] stopping");
+                            output->stop();
+                            Serial.println("[i2sWriterTask] stopped. YOU SHOULD NOT BE SEEING THIS MESSAGE");
+                            return;
+                        }
+                        // how many bytes do we now have to send
                         availableBytes = NUM_FRAMES_TO_SEND * sizeof(uint32_t);
                         // reset the buffer position back to the start
                         buffer_position = 0;
@@ -72,5 +81,19 @@ void I2SOutput::start(i2s_port_t i2sPort, i2s_pin_config_t &i2sPins, SampleSourc
     i2s_zero_dma_buffer(m_i2sPort);
     // start a task to write samples to the i2s peripheral
     TaskHandle_t writerTaskHandle;
+    Serial.println("[I2SOutput::start] creating task: 'i2s Writer Task'");
     xTaskCreate(i2sWriterTask, "i2s Writer Task", 4096, this, 1, &writerTaskHandle);
+}
+
+// Implented because we want to end the task, unlike the example which plays continuously
+void I2SOutput::stop()
+{
+    // Stop and delete the i2s driver
+    Serial.println("[I2SOutput::stop] i2s_driver_uninstall'ing");
+    i2s_driver_uninstall(m_i2sPort);
+    // Stop the writer task
+    Serial.println("[I2SOutput::stop] vTaskDelete'ing");
+    vTaskDelete(m_i2sWriterTaskHandle);
+    // code here didn't seemingly run bc we're ending this task? this also means in the above writing task, we never actually return
+    Serial.println("[I2SOutput::stop] YOU SHOULD NOT BE SEEING THIS MESSAGE");
 }
