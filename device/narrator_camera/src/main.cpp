@@ -22,7 +22,6 @@ i2s_pin_config_t i2sPins = {
     .data_in_num = -1};
 I2SOutput *output;
 SampleSource *sampleSource;
-
 // Wifi
 NETWORK_H WiFiManager myWiFiManager(ENV_WIFI_SSID, ENV_WIFI_PASSWORD);
 
@@ -49,7 +48,6 @@ void setup()
   // https://randomnerdtutorials.com/esp32-cam-ov2640-camera-settings/
   s->set_brightness(s, 1); // tweak brightness up
   s->set_saturation(s, 1);
-  s->set_contrast(s, 1);
 }
 
 //========================================
@@ -82,6 +80,10 @@ void loop()
       String captionText;
 
       // 1. CAPTURE FRAME
+      // HACK: capture and throw away first frame. common issue with camera initialization/startup. the esp_camera_fb_return'ed a black frame or prior frame in loop below (did in setup, but after a crash doesn't seem to work)
+      // https://github.com/espressif/esp32-camera/issues/545#issuecomment-1600335819
+      esp_camera_fb_return(esp_camera_fb_get());
+      // --- capture frame for captioning/narration
       camera_fb_t *fb = esp_camera_fb_get();
       if (!fb)
       {
@@ -97,8 +99,7 @@ void loop()
       // --- http
       HTTPClient httpCaption;
       String api1Path = "/device/narrator_camera/caption";
-      String api1Url = apiHost + api1Path;
-      httpCaption.begin(api1Url.c_str());
+      httpCaption.begin((apiHost + api1Path).c_str());
       httpCaption.addHeader("Content-Type", "image/jpeg");
       // --- post (TODO: graceful err handling)
       int httpCaptionResponseCode = httpCaption.POST(fb->buf, fb->len);
@@ -129,8 +130,7 @@ void loop()
         // --- http
         HTTPClient httpNarrate;
         String api2Path = "/device/narrator_camera/narrate";
-        String api2Url = apiHost + api2Path;
-        httpNarrate.begin(api2Url.c_str());
+        httpNarrate.begin((apiHost + api2Path).c_str());
         // --- post (TODO: graceful err handling)
         StaticJsonDocument<1024> docPostBody; // could maybe be using DynamicJsonDocument https://arduinojson.org/v6/api/dynamicjsondocument
         docPostBody["text"] = captionText;
@@ -153,7 +153,7 @@ void loop()
 
         // 5. PLAY BACK AUDIO
         Serial.println("[loop] Narrating on core 1 via task/queue...");
-        sampleSource = new WAVReader(audioBuffer.get(), sizeOfPayloadBuffer);
+        sampleSource = new WAVReader(audioBuffer.get(), sizeOfPayloadBuffer); // we need get() to convert from unique_ptr to uint8_t
         output = new I2SOutput();
         output->start(I2S_NUM_1, i2sPins, sampleSource);
       }

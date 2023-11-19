@@ -28,11 +28,11 @@ void camera_config_init()
   camera_config.pin_pwdn = PWDN_GPIO_NUM;
   camera_config.pin_reset = RESET_GPIO_NUM;
   camera_config.xclk_freq_hz = 20000000;
-  camera_config.frame_size = FRAMESIZE_QVGA;
+  camera_config.frame_size = FRAMESIZE_SXGA;   // 1280 x 1024, other sizes check https://randomnerdtutorials.com/esp32-cam-ov2640-camera-settings/
   camera_config.pixel_format = PIXFORMAT_JPEG; // for streaming
   // camera_config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
-  camera_config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  camera_config.grab_mode = CAMERA_GRAB_WHEN_EMPTY; // why not CAMERA_GRAB_LATEST??? https://github.com/espressif/esp32-camera/blob/master/driver/include/esp_camera.h#L88
   camera_config.fb_location = CAMERA_FB_IN_PSRAM;
-  camera_config.jpeg_quality = 12;
+  camera_config.jpeg_quality = 32; // 1 - 63
   camera_config.fb_count = 1;
 }
