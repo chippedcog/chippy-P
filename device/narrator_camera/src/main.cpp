@@ -48,6 +48,8 @@ void setup()
   // https://randomnerdtutorials.com/esp32-cam-ov2640-camera-settings/
   s->set_brightness(s, 1); // tweak brightness up
   s->set_saturation(s, 1);
+  // --- leds (indicator of wip)
+  pinMode(PIN_LED_BUILTIN, OUTPUT);
 }
 
 //========================================
@@ -71,6 +73,7 @@ void loop()
   {
     // ... immediately say reqest is not submitting so it doesn't get called again
     isSubmittingRequest = false;
+    digitalWrite(PIN_LED_BUILTIN, HIGH); // turn on LED to indicate we're working
     // ... check if connected to wifi
     if (WiFi.status() == WL_CONNECTED)
     {
@@ -162,5 +165,7 @@ void loop()
     {
       Serial.println("[loop] WiFi Disconnected");
     }
+    // turn oof LED to indicate we're done (whether there was err or not)
+    digitalWrite(PIN_LED_BUILTIN, LOW);
   }
 }
