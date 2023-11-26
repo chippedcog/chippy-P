@@ -55,7 +55,7 @@ void loop()
   // RECORDED, DO SOMETHING
   if (!recordedData.empty())
   {
-    Serial.println("[loop] posting recording: " + String(recordedData.size()));
+    Serial.println("[loop] posting recording: " + String(recordedData.size()) + " bytes");
 
     // SERVER: Send for speech-to-text & text-to-speech back
     // --- http
