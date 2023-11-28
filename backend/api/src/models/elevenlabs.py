@@ -24,17 +24,14 @@ def eleven_labs_text_to_speech(text: str, file_path: str, voice_id="Zlb1dXrM653N
     }
     # Request
     response = requests.post(f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?optimize_streaming_latency=0&output_format={output_format}", headers=headers, json=json)
-
     # Write all respose chunks to a file (kinda jank saving to disk in this func but w/e)
     audio_io = BytesIO()
     for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
         if chunk:
             audio_io.write(chunk)
     audio_io.seek(0) # resets file pointer to start for reading later
-
     # Return BytesIO
     return audio_io
-
 
 def mp3_to_wav(mp3_iobytes: BytesIO) -> BytesIO:
     print('mp3_to_wav')

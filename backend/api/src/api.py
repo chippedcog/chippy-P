@@ -4,10 +4,11 @@ from sanic_cors import CORS
 
 import env
 from middleware.error_handler import APIErrorHandler
+from blueprints.converse_action_button.routes import blueprint_converse_action_button
+from blueprints.narrator_camera.routes import blueprint_narrator_camera
 from blueprints.sketch_ping.routes import blueprint_sketch_ping
 from blueprints.sketch_led_state_polling.routes import blueprint_sketch_led_state_polling
 from blueprints.sketch_led_state_action_button.routes import blueprint_sketch_led_state_action_button
-from blueprints.narrator_camera.routes import blueprint_narrator_camera
 
 # INIT
 api_app = Sanic('api')
@@ -28,6 +29,7 @@ api_app.blueprint(blueprint_sketch_led_state_action_button)
 api_app.blueprint(blueprint_sketch_led_state_polling)
 # --- get started pt.3
 api_app.blueprint(blueprint_narrator_camera)
+api_app.blueprint(blueprint_converse_action_button)
 # --- goin wild (TODO)
 # ...
 
